@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Retinal OCT Health & Classifier Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        'primary-blue': '#1080ee',
+                        'secondary-green': '#10b981',
+                        'bg-gray': '#f4f6f9',
+                        'card-white': '#ffffff',
+                        'danger-red': '#ef4444'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom styles */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        ::-webkit-scrollbar-track { background: #f7fafc; }
+
+        /* Used to hide the 'Primary Causes', etc., table headers on small screens */
+        .desktop-only { display: none; }
+        @media (min-width: 640px) {
+            .desktop-only { display: block; }
+        }
+        body {
+            overflow-x: hidden;
+        }
+    </style>
+</head>
+<body class="bg-bg-gray min-h-screen font-sans p-4 sm:p-8">
+
+    <div class="max-w-6xl mx-auto space-y-8">
+        <header class="text-center">
+            <h1 class="text-3xl sm:text-4xl font-extrabold text-gray-800">Retinal OCT Health & Classifier Dashboard</h1>
+            <!-- <p class="text-gray-500 mt-2">Hybrid Node.js/Flask model interface and patient education.</p> -->
+        </header>
+
+        <div class="bg-card-white p-6 sm:p-10 rounded-xl shadow-2xl space-y-6">
+            
+            <div class="border-b border-gray-200">
+                <nav class="flex space-x-4" aria-label="Tabs">
+                    <button id="tab-classifier" onclick="switchTab('classifier')" class="tab-button inline-flex items-center px-4 py-2 border-b-2 font-medium text-lg leading-5 focus:outline-none transition duration-150 ease-in-out text-primary-blue border-primary-blue">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0h6"></path></svg>
+                        OCT Classifier
+                    </button>
+                    <button id="tab-info" onclick="switchTab('info')" class="tab-button inline-flex items-center px-4 py-2 border-b-2 font-medium text-lg leading-5 focus:outline-none transition duration-150 ease-in-out text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        Disease Information
+                    </button>
+                </nav>
+            </div>
+
+
+
+
+
+
+
+<div id="content-classifier" class="tab-content space-y-6">
+                <div id="upload-area" class="border-2 border-dashed border-primary-blue/50 rounded-lg p-6 text-center cursor-pointer transition duration-300 hover:bg-primary-blue/5">
+                    <input type="file" id="image-upload" name="oct_scan" accept="image/*" class="hidden" onchange="handleImageUpload(event)">
+                    <label for="image-upload" class="flex flex-col items-center justify-center space-y-3">
+                        <svg class="w-12 h-12 text-primary-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                        <p class="text-lg font-semibold text-gray-700">Click or Drag & Drop OCT Scan</p>
+                        <p class="text-sm text-gray-500">Supports PNG, JPG, JPEG formats.</p>
+                    </label>
+                </div>
+                
+                <button id="run-prediction-btn" onclick="runPrediction()" class="hidden w-full py-3 bg-secondary-green text-card-white font-bold text-lg rounded-lg hover:bg-secondary-green/90 transition duration-150 shadow-md">
+                    Run Classification
+                </button>
+
+                <div id="status-message" class="hidden p-3 rounded-lg text-center" role="alert"></div>
+
+                <div id="loading-indicator" class="hidden text-center p-6">
+                    <svg class="animate-spin h-8 w-8 text-primary-blue mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <p class="text-gray-600 mt-2">Sending scan to Python service for classification...</p>
+                </div>
+
+                <div id="results-container" class="hidden grid grid-cols-1 lg:grid-cols-2 gap-6 pt-4">
+
+                    <div class="bg-bg-gray p-4 rounded-lg shadow-inner">
+                        <h2 class="text-xl font-semibold mb-3 text-gray-800 border-b pb-2">Uploaded Image</h2>
+                        <img id="image-preview" class="w-full h-auto object-contain rounded-md shadow-md max-h-80" src="#" alt="OCT Scan Preview">
+                    </div>
+
+                    <div class="bg-bg-gray p-4 rounded-lg shadow-inner flex flex-col justify-between">
+                        <div>
+                            <h2 class="text-xl font-semibold mb-3 text-gray-800 border-b pb-2">Model Prediction</h2>
+                            <div id="prediction-output" class="space-y-4">
+                                </div>
+                        </div>
+                        
+                        <div class="mt-4 space-y-3">
+                            <button id="view-details-btn" onclick="filterAndSwitchTab()" class="hidden w-full py-2 px-4 bg-primary-blue text-card-white font-medium rounded-lg hover:bg-primary-blue/90 transition duration-150 shadow-md">
+                                View Detailed Disease Info & Treatments
+                            </button>
+                            <button onclick="document.getElementById('modal-preprocessing').classList.remove('hidden')" class="w-full py-2 px-4 bg-gray-200 text-gray-700 font-medium rounded-lg hover:bg-gray-300 transition duration-150 shadow-sm text-sm">
+                                View Model Pre-processing Details
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="content-info" class="tab-content hidden">
+                <div class="flex justify-between items-center mb-6 border-b pb-3">
+                    <h2 class="text-2xl font-bold text-gray-800">Retinal Conditions Overview</h2>
+                    <select id="disease-filter" onchange="displayDiseaseInfo(this.value)" class="p-2 border border-gray-300 rounded-lg shadow-sm text-gray-700">
+                        </select>
+                </div>
+                
+                <div id="disease-details-container" class="space-y-8">
+                    <div class="p-4 bg-blue-100 rounded-lg text-blue-800 border border-blue-300">
+                        Select a condition from the dropdown menu above or run a classification to view detailed information, causes, and treatment options.
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div id="modal-preprocessing" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full z-50" onclick="if(event.target.id === 'modal-preprocessing') document.getElementById('modal-preprocessing').classList.add('hidden')">
+        <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-1/2 shadow-2xl rounded-xl bg-card-white">
+            <h3 class="text-2xl font-bold text-gray-800 mb-4 border-b pb-2">Pre-processing Requirements (PyTorch Context)</h3>
+            <div class="text-gray-700 space-y-4 text-sm">
+                <p>For deployment, the image sent to the Python inference service must match the data transformations used during the **ResNet-50 PyTorch model training**:</p>
+                <div class="bg-yellow-100 p-3 rounded-lg border border-yellow-300 space-y-2">
+                    <p class="font-semibold text-yellow-800">1. Resize:</p>
+                    <p class="pl-4">Image is resized to <code class="font-mono text-primary-blue">224 x 224</code> pixels.</p>
+                    <p class="font-semibold text-yellow-800">2. Normalization (Crucial for ResNet-50):</p>
+                    <p class="pl-4">Pixel values are normalized using the standard ImageNet mean and standard deviation:</p>
+                    <ul class="list-disc list-inside pl-6 mt-1 space-y-1 font-mono">
+                        <li>Mean: <code class="text-primary-blue">[0.485, 0.456, 0.406]</code> (RGB Channels)</li>
+                        <li>Std Dev: <code class="text-primary-blue">[0.229, 0.224, 0.225]</code> (RGB Channels)</li>
+                    </ul>
+                </div>
+                <p>The **Python service** is responsible for performing these exact steps before feeding the image to the model.</p>
+            </div>
+            <div class="text-right mt-6">
+                <button onclick="document.getElementById('modal-preprocessing').classList.add('hidden')" class="py-2 px-4 bg-primary-blue text-white font-medium rounded-lg hover:bg-primary-blue/90 shadow-md">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+
+<script>
+        // --- 1. EMBEDDED DISEASE DATA ---
+        // The Python service returns a combined JSON object containing both the prediction 
+        // and the corresponding disease information from this static list.
+        const DISEASE_DATA = [
+            {
+                "class": "CNV",
+                "fullName": "Choroidal Neovascularization (Wet AMD)",
+                "description": "An advanced stage of 'wet' Age-related Macular Degeneration (AMD) where abnormal, fragile blood vessels grow beneath the retina. These vessels leak fluid or blood, causing rapid and severe vision loss.",
+                "causes": ["Age-related Macular Degeneration (AMD)", "Severe myopia (nearsightedness)", "Inflammatory eye conditions (e.g., punctate inner choroidopathy)", "Genetic predisposition"],
+                "prevention_management": ["Regular eye exams (especially if high-risk)", "Adoption of the AREDS2 vitamin formula", "Regular self-monitoring with an Amsler grid"],
+                "medicines_treatments": ["Anti-VEGF injections (Aflibercept, Ranibizumab, Bevacizumab) – Primary treatment", "Photodynamic Therapy (PDT) – Used in select cases", "Steroid injections (Triamcinolone)"]
+            },
+            {
+                "class": "DME",
+                "fullName": "Diabetic Macular Edema",
+                "description": "Swelling in the macula (the central part of the retina) caused by damaged blood vessels leaking fluid due to high blood sugar levels. It is the most common cause of vision loss in people with diabetes.",
+                "causes": ["Poorly controlled Type 1 or Type 2 Diabetes (high HbA1c levels)", "Hypertension (high blood pressure)", "High cholesterol levels", "Diabetic Nephropathy (kidney disease)"],
+                "prevention_management": ["Strict control of blood sugar (HbA1c levels)", "Manage blood pressure and cholesterol", "Regular comprehensive dilated eye exams"],
+                "medicines_treatments": ["Anti-VEGF injections (Ranibizumab, Aflibercept) – First line therapy", "Steroid injections (Dexamethasone implant, Fluocinolone implant)", "Laser photocoagulation (Focal or grid laser)"]
+            },
+            {
+                "class": "DRUSEN",
+                "fullName": "Drusen (Early/Intermediate AMD)",
+                "description": "Yellow deposits of fatty protein material that accumulate under the retina. While small, hard drusen are common and usually harmless, large, soft drusen are a significant risk factor for progression to advanced AMD (CNV).",
+                "causes": ["Aging (primary risk factor)", "Smoking (increases risk significantly)", "Family history/Genetics", "Caucasian ethnicity"],
+                "prevention_management": ["Regular self-monitoring with an Amsler grid", "Quit smoking immediately", "Eat a diet rich in green leafy vegetables (lutein, zeaxanthin)"],
+                "medicines_treatments": ["AREDS2 high-dose antioxidant and mineral supplements (only for intermediate/advanced stages)", "N/A (No medical intervention typically required for early stages)"]
+            },
+            {
+                "class": "NORMAL",
+                "fullName": "Healthy Retina",
+                "description": "The retina is clear with a normal foveal contour. No signs of pathological fluid, choroidal neovascularization, or significant drusen deposits are present, indicating good health.",
+                "causes": ["N/A (This represents the absence of the specific pathologies being classified)"],
+                "prevention_management": ["Maintain a healthy lifestyle (diet, exercise)", "Protect eyes from UV light", "Schedule routine annual eye examinations (especially after age 40)", "Avoid smoking"],
+                "medicines_treatments": ["N/A (No treatment necessary for a healthy retina)"]
+            }
+        ];
+
+        let uploadedFile = null;
+        let lastPredictedClass = null;
+
+        // --- 2. TAB SWITCHING LOGIC ---
+
+        function switchTab(tabName, filterClass = null) {
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.add('hidden');
+            });
+            document.querySelectorAll('.tab-button').forEach(button => {
+                button.classList.remove('text-primary-blue', 'border-primary-blue');
+                button.classList.add('text-gray-500', 'border-transparent', 'hover:text-gray-700', 'hover:border-gray-300');
+            });
+
+            document.getElementById(`content-${tabName}`).classList.remove('hidden');
+            document.getElementById(`tab-${tabName}`).classList.remove('text-gray-500', 'border-transparent', 'hover:text-gray-700', 'hover:border-gray-300');
+            document.getElementById(`tab-${tabName}`).classList.add('text-primary-blue', 'border-primary-blue');
+
+            if (tabName === 'info') {
+                if (filterClass) {
+                    document.getElementById('disease-filter').value = filterClass;
+                    displayDiseaseInfo(filterClass);
+                } else {
+                    displayDiseaseInfo('ALL'); 
+                }
+            }
+        }
+
+        function filterAndSwitchTab() {
+            if (lastPredictedClass) {
+                switchTab('info', lastPredictedClass);
+            }
+        }
+
+        // --- 3. IMAGE UPLOAD & PREDICTION LOGIC ---
+
+        function handleImageUpload(event) {
+            uploadedFile = event.target.files[0];
+            if (!uploadedFile || !uploadedFile.type.startsWith('image/')) {
+                return;
+            }
+
+            const preview = document.getElementById('image-preview');
+            const runBtn = document.getElementById('run-prediction-btn');
+            const resultsContainer = document.getElementById('results-container');
+            const statusMessage = document.getElementById('status-message');
+            const reader = new FileReader();
+
+            // Reset UI
+            resultsContainer.classList.add('hidden');
+            statusMessage.classList.add('hidden');
+            runBtn.classList.remove('hidden');
+            document.getElementById('view-details-btn').classList.add('hidden');
+
+            reader.onload = (e) => {
+                preview.src = e.target.result;
+                preview.style.display = 'block';
+            };
+
+            reader.readAsDataURL(uploadedFile);
+        }
+
+        async function runPrediction() {
+            if (!uploadedFile) {
+                setStatus('Please upload an OCT scan first.', 'bg-red-100 text-danger-red');
+                return;
+            }
+            
+            const loading = document.getElementById('loading-indicator');
+            const runBtn = document.getElementById('run-prediction-btn');
+            const statusMessage = document.getElementById('status-message');
+
+            // Set UI to loading state
+            runBtn.classList.add('hidden');
+            document.getElementById('results-container').classList.add('hidden');
+            loading.classList.remove('hidden');
+            statusMessage.classList.add('hidden');
+
+
+            const formData = new FormData();
+            // The name 'oct_scan' MUST match the name expected by multer in server.js
+            formData.append('oct_scan', uploadedFile); 
+            
+            try {
+                // Fetch call to the Node.js proxy server (uses relative path /predict)
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || `Server Error: ${response.status}`);
+                }
+
+                // SUCCESS
+                displayResults(data);
+
+            } catch (error) {
+                console.error("Prediction failed:", error);
+                let userMessage = error.message.includes('Failed to connect to the prediction service') 
+                    ? "Failed to connect to the Python/Flask service. Please ensure BOTH the Node.js (Port 3000) and Python/Flask (Port 5000) servers are running."
+                    : `Prediction failed: ${error.message}`;
+
+                setStatus(userMessage, 'bg-red-100 text-danger-red');
+                runBtn.classList.remove('hidden');
+            } finally {
+                loading.classList.add('hidden');
+            }
+        }
+
+        function setStatus(message, className) {
+            const statusMessage = document.getElementById('status-message');
+            statusMessage.textContent = message;
+            statusMessage.className = `p-3 rounded-lg text-center ${className}`;
+            statusMessage.classList.remove('hidden');
+        }
+
+
+        /**
+         * Displays the classification results and links to educational content.
+         * @param {Object} data - The full response data from the Flask service.
+         */
+        function displayResults(data) {
+            const outputDiv = document.getElementById('prediction-output');
+            const resultsContainer = document.getElementById('results-container');
+            const viewDetailsBtn = document.getElementById('view-details-btn');
+            
+            outputDiv.innerHTML = ''; // Clear previous results
+            resultsContainer.classList.remove('hidden');
+            
+            // The Flask service sends back 'predicted_class' and 'disease_info'
+            lastPredictedClass = data.predicted_class;
+            
+            // Find the full info from our local static data for display integrity
+            const diseaseInfo = data.disease_info || { fullName: data.predicted_class, description: 'No detailed information found.' };
+            const statusClass = (lastPredictedClass === 'NORMAL') ? 'bg-secondary-green/10 text-secondary-green' : 'bg-danger-red/10 text-danger-red';
+            
+            // 1. Display the main prediction
+            const predictionHtml = `
+                <div class="text-center p-4 rounded-lg ${statusClass} shadow-lg border">
+                    <p class="text-sm text-gray-600 font-medium">CLASSIFICATION RESULT</p>
+                    <p class="text-3xl font-extrabold mt-1">${diseaseInfo.fullName}</p>
+                    <p class="text-lg font-semibold mt-1">Confidence: ${data.confidence}</p>
+                </div>
+            `;
+            outputDiv.innerHTML += predictionHtml;
+
+            // 2. Display the summary and activate the details button
+            outputDiv.innerHTML += `
+                <div class="p-3 bg-card-white rounded-lg shadow-sm">
+                    <h3 class="text-base font-semibold text-gray-800 border-b pb-1">Condition Summary:</h3>
+                    <p class="text-sm text-gray-700 mt-2">${diseaseInfo.description}</p>
+                </div>
+            `;
+            
+            viewDetailsBtn.classList.remove('hidden');
+            viewDetailsBtn.textContent = `View Detailed Info for ${lastPredictedClass}`;
+            
+            // Set success status message
+            setStatus('Classification successful! Results are displayed below.', 'bg-green-100 text-secondary-green');
+        }
+
+
+        // --- 4. DISEASE INFORMATION TAB LOGIC ---
+
+        function displayDiseaseInfo(filterClass) {
+            const detailsContainer = document.getElementById('disease-details-container');
+            detailsContainer.innerHTML = ''; // Clear existing content
+            
+            let filteredData;
+            
+            if (filterClass === 'ALL') {
+                filteredData = DISEASE_DATA;
+            } else {
+                filteredData = DISEASE_DATA.filter(d => d.class === filterClass);
+            }
+
+            if (filteredData.length === 0) {
+                 detailsContainer.innerHTML = `<p class="p-4 bg-yellow-100 rounded-lg text-yellow-800">No specific information found for the selected condition.</p>`;
+                 return;
+            }
+
+            filteredData.forEach(item => {
+                const isNormal = item.class === 'NORMAL';
+                
+                const formatList = (arr) => arr.map(li => `<li class="text-gray-700">${li}</li>`).join('');
+
+                const detailCard = `
+                    <div class="p-6 border-2 ${isNormal ? 'border-secondary-green/50 bg-secondary-green/5' : 'border-danger-red/50 bg-red-50'} rounded-xl shadow-lg">
+                        <h3 class="text-2xl font-extrabold ${isNormal ? 'text-secondary-green' : 'text-danger-red'} mb-3">
+                            ${item.class} - ${item.fullName}
+                        </h3>
+                        
+                        <div class="space-y-4">
+                            <div class="border-l-4 border-primary-blue pl-4 mb-4">
+                                <p class="text-sm font-semibold text-gray-800 mb-1">Description</p>
+                                <p class="text-gray-700 text-base">${item.description}</p>
+                            </div>
+
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full divide-y divide-gray-200 bg-card-white shadow-md rounded-lg">
+                                    <tbody class="divide-y divide-gray-200">
+                                        
+                                        <tr>
+                                            <td class="px-6 py-4 whitespace-nowrap desktop-only font-semibold text-primary-blue w-1/4 align-top">
+                                                Primary Causes
+                                            </td>
+                                            <td class="px-6 py-4 align-top">
+                                                <ul class="list-disc list-inside space-y-1 text-sm">
+                                                    <span class="sm:hidden font-semibold text-primary-blue">Primary Causes:</span>
+                                                    ${formatList(item.causes)}
+                                                </ul>
+                                            </td>
+                                        </tr>
+
+                                        <tr>
+                                            <td class="px-6 py-4 whitespace-nowrap desktop-only font-semibold text-primary-blue w-1/4 align-top">
+                                                Prevention & Lifestyle
+                                            </td>
+                                            <td class="px-6 py-4 align-top">
+                                                <ul class="list-disc list-inside space-y-1 text-sm">
+                                                    <span class="sm:hidden font-semibold text-primary-blue">Prevention & Lifestyle:</span>
+                                                    ${formatList(item.prevention_management)}
+                                                </ul>
+                                            </td>
+                                        </tr>
+
+                                        <tr>
+                                            <td class="px-6 py-4 whitespace-nowrap desktop-only font-semibold text-primary-blue w-1/4 align-top">
+                                                Medicines & Treatments
+                                            </td>
+                                            <td class="px-6 py-4 align-top">
+                                                <ul class="list-disc list-inside space-y-1 text-sm">
+                                                    <span class="sm:hidden font-semibold text-primary-blue">Medicines & Treatments:</span>
+                                                    ${formatList(item.medicines_treatments)}
+                                                </ul>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                detailsContainer.innerHTML += detailCard;
+            });
+        }
+
+        // --- 5. INITIALIZATION ---
+
+        function initApp() {
+            // Populate the filter dropdown in the Disease Information tab
+            const filterDropdown = document.getElementById('disease-filter');
+            filterDropdown.innerHTML = '';
+            
+            // Add 'ALL' option
+            let allOption = document.createElement('option');
+            allOption.value = 'ALL';
+            allOption.textContent = 'All Conditions';
+            filterDropdown.appendChild(allOption);
+
+            // Add specific disease options
+            DISEASE_DATA.forEach(item => {
+                let option = document.createElement('option');
+                option.value = item.class;
+                option.textContent = `${item.class} (${item.fullName.split('(')[0].trim()})`;
+                filterDropdown.appendChild(option);
+            });
+
+            // Set up initial tab state and content
+            switchTab('classifier'); 
+            displayDiseaseInfo('ALL');
+            
+            // Initialize drag and drop on the upload area
+            const uploadArea = document.getElementById('upload-area');
+            const fileInput = document.getElementById('image-upload');
+
+            uploadArea.addEventListener('click', () => fileInput.click());
+
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.classList.add('border-primary-blue', 'bg-primary-blue/10');
+            });
+
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.classList.remove('border-primary-blue', 'bg-primary-blue/10');
+            });
+
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('border-primary-blue', 'bg-primary-blue/10');
+                
+                const files = e.dataTransfer.files;
+                if (files.length) {
+                    fileInput.files = files;
+                    const changeEvent = new Event('change', { bubbles: true });
+                    fileInput.dispatchEvent(changeEvent);
+                }
+            });
+        }
+        
+        // The DISEASE_DATA is embedded here for client-side UI functionality
+     
+        
+        initApp(); // Start the application setup
+    </script>
+</body>
+</html>
