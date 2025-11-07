@@ -4,10 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Retinal OCT Health & Classifier Dashboard</title>
+    <!-- Load Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Load Inter font -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
     
     <script>
+        // Configure Tailwind
         tailwind.config = {
             theme: {
                 extend: {
@@ -26,12 +29,12 @@
         }
     </script>
     <style>
-        /* Custom styles */
+        /* Custom scrollbar */
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
         ::-webkit-scrollbar-track { background: #f7fafc; }
 
-        /* Used to hide the 'Primary Causes', etc., table headers on small screens */
+        /* Hide table headers on mobile */
         .desktop-only { display: none; }
         @media (min-width: 640px) {
             .desktop-only { display: block; }
@@ -44,13 +47,16 @@
 <body class="bg-bg-gray min-h-screen font-sans p-4 sm:p-8">
 
     <div class="max-w-6xl mx-auto space-y-8">
+        <!-- Header -->
         <header class="text-center">
+            <!-- (CHANGE 1: Removed subtitle) -->
             <h1 class="text-3xl sm:text-4xl font-extrabold text-gray-800">Retinal OCT Health & Classifier Dashboard</h1>
-            <!-- <p class="text-gray-500 mt-2">Hybrid Node.js/Flask model interface and patient education.</p> -->
         </header>
 
+        <!-- Main Card Container -->
         <div class="bg-card-white p-6 sm:p-10 rounded-xl shadow-2xl space-y-6">
             
+            <!-- Navigation Tabs -->
             <div class="border-b border-gray-200">
                 <nav class="flex space-x-4" aria-label="Tabs">
                     <button id="tab-classifier" onclick="switchTab('classifier')" class="tab-button inline-flex items-center px-4 py-2 border-b-2 font-medium text-lg leading-5 focus:outline-none transition duration-150 ease-in-out text-primary-blue border-primary-blue">
@@ -65,12 +71,9 @@
             </div>
 
 
-
-
-
-
-
-<div id="content-classifier" class="tab-content space-y-6">
+            <!-- TAB CONTENT: OCT Classifier -->
+            <div id="content-classifier" class="tab-content space-y-6">
+                <!-- File Upload Area -->
                 <div id="upload-area" class="border-2 border-dashed border-primary-blue/50 rounded-lg p-6 text-center cursor-pointer transition duration-300 hover:bg-primary-blue/5">
                     <input type="file" id="image-upload" name="oct_scan" accept="image/*" class="hidden" onchange="handleImageUpload(event)">
                     <label for="image-upload" class="flex flex-col items-center justify-center space-y-3">
@@ -80,12 +83,15 @@
                     </label>
                 </div>
                 
+                <!-- Prediction Button -->
                 <button id="run-prediction-btn" onclick="runPrediction()" class="hidden w-full py-3 bg-secondary-green text-card-white font-bold text-lg rounded-lg hover:bg-secondary-green/90 transition duration-150 shadow-md">
                     Run Classification
                 </button>
 
+                <!-- Status/Error Message -->
                 <div id="status-message" class="hidden p-3 rounded-lg text-center" role="alert"></div>
 
+                <!-- Loading Indicator -->
                 <div id="loading-indicator" class="hidden text-center p-6">
                     <svg class="animate-spin h-8 w-8 text-primary-blue mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -94,18 +100,22 @@
                     <p class="text-gray-600 mt-2">Sending scan to Python service for classification...</p>
                 </div>
 
+                <!-- Preview and Results Area -->
                 <div id="results-container" class="hidden grid grid-cols-1 lg:grid-cols-2 gap-6 pt-4">
 
+                    <!-- Image Preview -->
                     <div class="bg-bg-gray p-4 rounded-lg shadow-inner">
                         <h2 class="text-xl font-semibold mb-3 text-gray-800 border-b pb-2">Uploaded Image</h2>
                         <img id="image-preview" class="w-full h-auto object-contain rounded-md shadow-md max-h-80" src="#" alt="OCT Scan Preview">
                     </div>
 
+                    <!-- Prediction Results -->
                     <div class="bg-bg-gray p-4 rounded-lg shadow-inner flex flex-col justify-between">
                         <div>
                             <h2 class="text-xl font-semibold mb-3 text-gray-800 border-b pb-2">Model Prediction</h2>
                             <div id="prediction-output" class="space-y-4">
-                                </div>
+                                <!-- Results populate here -->
+                            </div>
                         </div>
                         
                         <div class="mt-4 space-y-3">
@@ -120,11 +130,13 @@
                 </div>
             </div>
 
+            <!-- TAB CONTENT: Disease Information -->
             <div id="content-info" class="tab-content hidden">
                 <div class="flex justify-between items-center mb-6 border-b pb-3">
                     <h2 class="text-2xl font-bold text-gray-800">Retinal Conditions Overview</h2>
                     <select id="disease-filter" onchange="displayDiseaseInfo(this.value)" class="p-2 border border-gray-300 rounded-lg shadow-sm text-gray-700">
-                        </select>
+                        <!-- Options populated by JS -->
+                    </select>
                 </div>
                 
                 <div id="disease-details-container" class="space-y-8">
@@ -137,6 +149,7 @@
         </div>
     </div>
 
+    <!-- Preprocessing Modal -->
     <div id="modal-preprocessing" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full z-50" onclick="if(event.target.id === 'modal-preprocessing') document.getElementById('modal-preprocessing').classList.add('hidden')">
         <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-1/2 shadow-2xl rounded-xl bg-card-white">
             <h3 class="text-2xl font-bold text-gray-800 mb-4 border-b pb-2">Pre-processing Requirements (PyTorch Context)</h3>
@@ -163,11 +176,11 @@
     </div>
 
 
-
-<script>
+    <!-- JavaScript Logic -->
+    <script>
         // --- 1. EMBEDDED DISEASE DATA ---
-        // The Python service returns a combined JSON object containing both the prediction 
-        // and the corresponding disease information from this static list.
+        // This data is used to populate the "Disease Information" tab
+        // so users can browse all conditions, even without running a prediction.
         const DISEASE_DATA = [
             {
                 "class": "CNV",
@@ -226,7 +239,8 @@
                     document.getElementById('disease-filter').value = filterClass;
                     displayDiseaseInfo(filterClass);
                 } else {
-                    displayDiseaseInfo('ALL'); 
+                    // Default to showing all if no filter is provided
+                    displayDiseaseInfo(document.getElementById('disease-filter').value || 'ALL'); 
                 }
             }
         }
@@ -288,6 +302,7 @@
             
             try {
                 // Fetch call to the Node.js proxy server (uses relative path /predict)
+                // This path is handled by server.js, which then calls the Python API
                 const response = await fetch('/predict', {
                     method: 'POST',
                     body: formData
@@ -296,6 +311,7 @@
                 const data = await response.json();
 
                 if (!response.ok) {
+                    // data.error will contain the message from the server (Node or Python)
                     throw new Error(data.error || `Server Error: ${response.status}`);
                 }
 
@@ -304,9 +320,13 @@
 
             } catch (error) {
                 console.error("Prediction failed:", error);
-                let userMessage = error.message.includes('Failed to connect to the prediction service') 
-                    ? "Failed to connect to the Python/Flask service. Please ensure BOTH the Node.js (Port 3000) and Python/Flask (Port 5000) servers are running."
-                    : `Prediction failed: ${error.message}`;
+                
+                // (CHANGE 2: Updated error message for Render)
+                // This is a more generic message for a live environment.
+                let userMessage = `Prediction failed: ${error.message}`;
+                if (error.message.includes('Failed to connect')) {
+                    userMessage = "Failed to connect to the prediction service. The server may be starting up or offline. Please try again in a moment.";
+                }
 
                 setStatus(userMessage, 'bg-red-100 text-danger-red');
                 runBtn.classList.remove('hidden');
@@ -324,8 +344,8 @@
 
 
         /**
-         * Displays the classification results and links to educational content.
-         * @param {Object} data - The full response data from the Flask service.
+         * Displays the classification results.
+         * The 'data' object comes directly from our Python service.
          */
         function displayResults(data) {
             const outputDiv = document.getElementById('prediction-output');
@@ -338,7 +358,7 @@
             // The Flask service sends back 'predicted_class' and 'disease_info'
             lastPredictedClass = data.predicted_class;
             
-            // Find the full info from our local static data for display integrity
+            // Use the disease_info object sent from the Python server
             const diseaseInfo = data.disease_info || { fullName: data.predicted_class, description: 'No detailed information found.' };
             const statusClass = (lastPredictedClass === 'NORMAL') ? 'bg-secondary-green/10 text-secondary-green' : 'bg-danger-red/10 text-danger-red';
             
@@ -369,7 +389,7 @@
 
 
         // --- 4. DISEASE INFORMATION TAB LOGIC ---
-
+        // This function uses the local DISEASE_DATA constant
         function displayDiseaseInfo(filterClass) {
             const detailsContainer = document.getElementById('disease-details-container');
             detailsContainer.innerHTML = ''; // Clear existing content
@@ -399,15 +419,18 @@
                         </h3>
                         
                         <div class="space-y-4">
+                            <!-- Description -->
                             <div class="border-l-4 border-primary-blue pl-4 mb-4">
                                 <p class="text-sm font-semibold text-gray-800 mb-1">Description</p>
                                 <p class="text-gray-700 text-base">${item.description}</p>
                             </div>
 
+                            <!-- Detailed List Table -->
                             <div class="overflow-x-auto">
                                 <table class="min-w-full divide-y divide-gray-200 bg-card-white shadow-md rounded-lg">
                                     <tbody class="divide-y divide-gray-200">
                                         
+                                        <!-- Causes -->
                                         <tr>
                                             <td class="px-6 py-4 whitespace-nowrap desktop-only font-semibold text-primary-blue w-1/4 align-top">
                                                 Primary Causes
@@ -420,6 +443,7 @@
                                             </td>
                                         </tr>
 
+                                        <!-- Prevention/Management -->
                                         <tr>
                                             <td class="px-6 py-4 whitespace-nowrap desktop-only font-semibold text-primary-blue w-1/4 align-top">
                                                 Prevention & Lifestyle
@@ -432,6 +456,7 @@
                                             </td>
                                         </tr>
 
+                                        <!-- Medicines/Treatments -->
                                         <tr>
                                             <td class="px-6 py-4 whitespace-nowrap desktop-only font-semibold text-primary-blue w-1/4 align-top">
                                                 Medicines & Treatments
@@ -476,6 +501,7 @@
 
             // Set up initial tab state and content
             switchTab('classifier'); 
+            // Display all info by default on the info tab
             displayDiseaseInfo('ALL');
             
             // Initialize drag and drop on the upload area
@@ -506,10 +532,10 @@
             });
         }
         
-        // The DISEASE_DATA is embedded here for client-side UI functionality
-     
+        // (CHANGE 3: Removed the duplicated data and initApp() call from here)
         
-        initApp(); // Start the application setup
+        // Start the application setup
+        initApp(); 
     </script>
 </body>
 </html>
